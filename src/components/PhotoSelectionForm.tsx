@@ -5,6 +5,7 @@ import { ResponsePage } from './ResponsePage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Upload, X } from 'lucide-react';
 
 // Import images
 import poseConfident from '@/assets/pose-confident.jpg';
@@ -17,16 +18,24 @@ import bgUrban from '@/assets/bg-urban.jpg';
 import bgNature from '@/assets/bg-nature.png';
 import bgOffice from '@/assets/bg-office.jpg';
 
+import positionFront from '@/assets/position-front.jpg';
+import positionBack from '@/assets/position-back.jpg';
 import positionLeft from '@/assets/position-left.jpg';
-import positionCenter from '@/assets/position-center.jpg';
 import positionRight from '@/assets/position-right.jpg';
-import positionFullbody from '@/assets/position-fullbody.jpg';
+
+import man1 from '@/assets/model-man1.webp';
+import man2 from '@/assets/model-man2.webp';
+import woman1 from '@/assets/model-woman1.webp';
+import woman2 from '@/assets/model-woman2.webp';
+import woman3 from '@/assets/model-woman3.webp';
 
 interface FormData {
   poseId: string;
   backgroundId: string;
   positionId: string;
+  modelId: string;
   uniqueId: string;
+  clothingPhoto: File | null;
 }
 
 const poseOptions = [
@@ -44,10 +53,18 @@ const backgroundOptions = [
 ];
 
 const positionOptions = [
+  { id: 'front', image: positionFront, description: 'Ön Pozisyon' },
+  { id: 'back', image: positionBack, description: 'Arka Pozisyon' },
   { id: 'left', image: positionLeft, description: 'Sol Pozisyon' },
-  { id: 'center', image: positionCenter, description: 'Merkez Pozisyon' },
   { id: 'right', image: positionRight, description: 'Sağ Pozisyon' },
-  { id: 'fullbody', image: positionFullbody, description: 'Tam Vücut' },
+];
+
+const modelOptions = [
+  { id: 'model1', image: man1, description: 'Model 1' },
+  { id: 'model2', image: man2, description: 'Model 2' },
+  { id: 'model3', image: woman1, description: 'Model 3' },
+  { id: 'model4', image: woman2, description: 'Model 4' },
+  { id: 'model5', image: woman3, description: 'Model 5' },
 ];
 
 export const PhotoSelectionForm = () => {
@@ -59,7 +76,9 @@ export const PhotoSelectionForm = () => {
     poseId: '',
     backgroundId: '',
     positionId: '',
+    modelId: '',
     uniqueId: uniqueId || '',
+    clothingPhoto: null,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,10 +114,10 @@ export const PhotoSelectionForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.poseId || !formData.backgroundId || !formData.positionId) {
+    if (!formData.poseId || !formData.backgroundId || !formData.positionId || !formData.modelId || !formData.clothingPhoto) {
       toast({
         title: "Hata",
-        description: "Lütfen tüm seçimleri yapınız.",
+        description: "Lütfen tüm seçimleri yapınız ve giysi fotoğrafı yükleyiniz.",
         variant: "destructive",
       });
       return;
@@ -107,12 +126,20 @@ export const PhotoSelectionForm = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('https://n8n.mertakcay.com/webhook-test/34e675a6-20cb-4461-b097-5bcbf221e24f', {
+      // Create FormData for file upload
+      const submitFormData = new FormData();
+      submitFormData.append('poseId', formData.poseId);
+      submitFormData.append('backgroundId', formData.backgroundId);
+      submitFormData.append('positionId', formData.positionId);
+      submitFormData.append('modelId', formData.modelId);
+      submitFormData.append('uniqueId', formData.uniqueId);
+      if (formData.clothingPhoto) {
+        submitFormData.append('clothingPhoto', formData.clothingPhoto);
+      }
+
+      const response = await fetch('https://n8n.mertakcay.com/webhook/34e675a6-20cb-4461-b097-5bcbf221e24f', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: submitFormData,
       });
 
       if (!response.ok) {
@@ -166,6 +193,70 @@ export const PhotoSelectionForm = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Model Seçimi */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-foreground">
+                Model Seç
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {modelOptions.map((option) => (
+                  <div key={option.id} className="space-y-2">
+                    <div
+                      className={`
+                        relative cursor-pointer rounded-xl overflow-hidden aspect-square
+                        bg-gradient-to-br from-card to-secondary/50
+                        border-2 transition-all duration-300 ease-out
+                        hover:scale-105 hover:shadow-lg flex items-center justify-center
+                        ${formData.modelId === option.id 
+                          ? "border-primary shadow-[var(--shadow-selected)] scale-105" 
+                          : "border-border hover:border-primary/50"
+                        }
+                      `}
+                      onClick={() => setFormData({ ...formData, modelId: option.id })}
+                    >
+                      {option.image ? (
+                        <img 
+                          src={option.image} 
+                          alt={option.description}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground">
+                          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-2">
+                            <span className="text-lg font-semibold">{option.id.slice(-1)}</span>
+                          </div>
+                          <span className="text-xs text-center">Fotoğraf<br/>Eklenecek</span>
+                        </div>
+                      )}
+                      
+                      {formData.modelId === option.id && (
+                        <div className="absolute top-3 right-3">
+                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                            <svg 
+                              className="w-4 h-4 text-primary-foreground" 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                            >
+                              <path 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                strokeWidth={2} 
+                                d="M5 13l4 4L19 7" 
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-medium text-center text-card-foreground">
+                      {option.description}
+                    </h3>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Poz Seçimi */}
             <div>
               <h2 className="text-xl font-semibold mb-4 text-foreground">
@@ -220,6 +311,57 @@ export const PhotoSelectionForm = () => {
                     onClick={(id) => setFormData({ ...formData, positionId: id })}
                   />
                 ))}
+              </div>
+            </div>
+
+            {/* Giysi Fotoğrafı */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-foreground">
+                Giysi Fotoğrafı
+              </h2>
+              <div className="space-y-4">
+                {formData.clothingPhoto ? (
+                  <div className="relative">
+                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary/20 border-2 border-dashed border-border">
+                      <img 
+                        src={URL.createObjectURL(formData.clothingPhoto)} 
+                        alt="Seçilen giysi" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, clothingPhoto: null })}
+                      className="absolute top-2 right-2 w-8 h-8 bg-destructive hover:bg-destructive/90 rounded-full flex items-center justify-center text-destructive-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      id="photo-input"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setFormData({ ...formData, clothingPhoto: file });
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor="photo-input"
+                      className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+                    >
+                      <Upload className="w-10 h-10 text-muted-foreground mb-3" />
+                      <span className="text-lg font-medium text-center">Fotoğrafı Yükle</span>
+                      <span className="text-sm text-muted-foreground text-center mt-2">Kamera veya galeriden fotoğraf seçin</span>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 
