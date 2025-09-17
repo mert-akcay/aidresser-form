@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { SelectionCard } from './SelectionCard';
+import { ResponsePage } from './ResponsePage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +55,21 @@ export const PhotoSelectionForm = () => {
   const location = useLocation();
   const { toast } = useToast();
   
+  const [formData, setFormData] = useState<FormData>({
+    poseId: '',
+    backgroundId: '',
+    positionId: '',
+    uniqueId: uniqueId || '',
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [responseType, setResponseType] = useState<'success' | 'badrequest' | 'maxretrycount' | 'timesup' | null>(null);
+
+  // If there's a response, show the response page
+  if (responseType) {
+    return <ResponsePage responseType={responseType} />;
+  }
+  
   // Unique ID yoksa formu gösterme
   if (!uniqueId) {
     return (
@@ -75,15 +91,6 @@ export const PhotoSelectionForm = () => {
       </div>
     );
   }
-  
-  const [formData, setFormData] = useState<FormData>({
-    poseId: '',
-    backgroundId: '',
-    positionId: '',
-    uniqueId: uniqueId,
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,21 +116,32 @@ export const PhotoSelectionForm = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        // Handle HTTP errors
+        setResponseType('badrequest');
+        return;
       }
+
+      // Parse the response JSON
+      const responseData = await response.json();
       
-      toast({
-        title: "Başarılı!",
-        description: "Seçimleriniz başarıyla kaydedildi.",
-      });
+      // Handle different response types based on the "respond" field
+      if (responseData.respond === 'success') {
+        setResponseType('success');
+      } else if (responseData.respond === 'badrequest') {
+        setResponseType('badrequest');
+      } else if (responseData.respond === 'maxretrycount') {
+        setResponseType('maxretrycount');
+      } else if (responseData.respond === 'timesup') {
+        setResponseType('timesup');
+      } else {
+        // Fallback for unknown response
+        setResponseType('badrequest');
+      }
       
     } catch (error) {
       console.error('Form gönderim hatası:', error);
-      toast({
-        title: "Hata",
-        description: "Bir hata oluştu. Lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
+      // Show bad request page on network errors
+      setResponseType('badrequest');
     } finally {
       setIsSubmitting(false);
     }
