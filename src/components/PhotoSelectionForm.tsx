@@ -88,6 +88,25 @@ export const PhotoSelectionForm = () => {
   if (responseType) {
     return <ResponsePage responseType={responseType} />;
   }
+
+  // Loading state while submitting
+  if (isSubmitting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background p-4 flex items-center justify-center">
+        <Card className="p-8 shadow-[var(--shadow-card)] backdrop-blur-sm bg-gradient-to-br from-card to-card/90 max-w-md mx-auto text-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-foreground">Gönderiliyor...</h2>
+              <p className="text-muted-foreground text-sm">
+                Seçimleriniz işleniyor, lütfen bekleyiniz.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
   
   // Unique ID yoksa formu gösterme
   if (!uniqueId) {
@@ -342,7 +361,6 @@ export const PhotoSelectionForm = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       id="photo-input"
                       onChange={(e) => {
